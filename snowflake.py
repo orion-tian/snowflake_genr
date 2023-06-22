@@ -2,6 +2,13 @@ import maya.cmds as cmds
 from functools import partial
 
 objName = "snowflake"
+mainBranchDefault = 6
+subdivDefault = 30
+height = 0.1
+radius = 0.2
+length = 2
+scale = 0.1
+
 
 def create(*args):
   flkLst = cmds.ls(objName)
@@ -11,14 +18,14 @@ def create(*args):
   mainBranches = cmds.intSliderGrp(mainBranchSlider, q=True, value=True)
   subdiv = cmds.intSliderGrp(numSubdvSlider, q=True, value=True)
 
-  cmds.polyCylinder(n=objName, sa=mainBranches, h=0.1, r=0.2)
-  cmds.polyExtrudeFacet(objName + '.f[0:%s]' %(mainBranches-1), kft=False, lt=(0,0,2), 
-                        ls=(0.1,0.1,1), d=subdiv)
+  cmds.polyCylinder(n=objName, sa=mainBranches, h=height, r=radius)
+  cmds.polyExtrudeFacet(objName + '.f[0:%s]' %(mainBranches-1), kft=False, 
+                        lt=(0,0,length), ls=(scale,scale,1), d=subdiv)
 
 def resetCallback(pwindID, *pArgs):
         # return UI to default values
-        mainBranches = cmds.intSliderGrp(mainBranchSlider, e=True, value=6)
-        subdiv = cmds.intSliderGrp(numSubdvSlider, e=True, value=30)
+        cmds.intSliderGrp(mainBranchSlider, e=True, value=mainBranchDefault)
+        cmds.intSliderGrp(numSubdvSlider, e=True, value=subdivDefault)
 
         # remake default snowflake
         create()
@@ -36,11 +43,13 @@ cmds.columnLayout(adjustableColumn=True)
 cmds.separator(h=10, style='none')
 
 mainBranchSlider = cmds.intSliderGrp(label='Main Branches', columnAlign= (1,'right'), 
-                                field=True, min=3, max=12, value=6, step=1, dc = 'empty')
+                                field=True, min=3, max=12, value=mainBranchDefault, 
+                                step=1, dc = 'empty')
 cmds.intSliderGrp(mainBranchSlider,  e=True, dc = partial(create))
 
 numSubdvSlider = cmds.intSliderGrp(label='Subdivisions', columnAlign= (1,'right'), 
-                                field=True, min=1, max=100, value=30, step=1, dc = 'empty')
+                                field=True, min=1, max=100, value=subdivDefault, 
+                                step=1, dc = 'empty')
 cmds.intSliderGrp(numSubdvSlider,  e=True, dc = partial(create))
 
 #reset button
