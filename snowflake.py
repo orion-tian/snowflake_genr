@@ -1,20 +1,58 @@
 import maya.cmds as cmds
+from functools import partial
 
 objName = "snowflake"
 
-flkLst = cmds.ls(objName)
-if len(flkLst) > 0:
-  cmds.delete(flkLst)
+def create(*args):
+  flkLst = cmds.ls(objName)
+  if len(flkLst) > 0:
+    cmds.delete(flkLst)
 
-obj = cmds.polyCylinder(n=objName, sa=6, h=0.1, r=0.2)
-cmds.polyExtrudeFacet(objName + '.f[0:5]', kft=False, lt=(0,0,2), ls=(0.1,0.1,1))
+  mainBranches = cmds.intSliderGrp(mainBranchSlider, q=True, value=True)
+  subdiv = cmds.intSliderGrp(numSubdvSlider, q=True, value=True)
 
-for j in range(5):
-  numFaces = cmds.polyEvaluate(objName, f=True)
-  for i in range(9, 32, 2):
-    cmds.polyCut(objName+'.f[%s]' %i, cd='X')
-  for k in range(32, numFaces):
-    print(k)
-    cmds.polyCut(objName+'.f[%s]' %k, cd='X')
+  cmds.polyCylinder(n=objName, sa=mainBranches, h=0.1, r=0.2)
+  cmds.polyExtrudeFacet(objName + '.f[0:%s]' %(mainBranches-1), kft=False, lt=(0,0,2), 
+                        ls=(0.1,0.1,1), d=subdiv)
 
+def resetCallback(pwindID, *pArgs):
+        # return UI to default values
+        mainBranches = cmds.intSliderGrp(mainBranchSlider, e=True, value=6)
+        subdiv = cmds.intSliderGrp(numSubdvSlider, e=True, value=30)
+
+        # remake default snowflake
+        create()
+
+#-------------UI--------------------#
+windowID = "myWindowID"
+
+if cmds.window(windowID, exists=True):
+  cmds.deleteUI(windowID)
+    
+cmds.window(windowID, title='Snowflake Generator', sizeable=False, resizeToFitChildren=True)
+cmds.columnLayout(adjustableColumn=True)
+
+# branch controls
+cmds.separator(h=10, style='none')
+
+mainBranchSlider = cmds.intSliderGrp(label='Main Branches', columnAlign= (1,'right'), 
+                                field=True, min=3, max=12, value=6, step=1, dc = 'empty')
+cmds.intSliderGrp(mainBranchSlider,  e=True, dc = partial(create))
+
+numSubdvSlider = cmds.intSliderGrp(label='Subdivisions', columnAlign= (1,'right'), 
+                                field=True, min=1, max=100, value=30, step=1, dc = 'empty')
+cmds.intSliderGrp(numSubdvSlider,  e=True, dc = partial(create))
+
+#reset button
+cmds.separator(h=10, style='none')
+cmds.button(label='Reset', command=partial(resetCallback, windowID))
+
+cmds.showWindow()
+  
+#-----------------Operations----------------------#
+create()
 cmds.select(objName)
+
+# for i in range(32, 32+12):
+#   cmds.polyExtrudeFacet(objName+'.f[%s]' %i, lt=(.55,0,.5), ls=(0.1,0.1,1))
+
