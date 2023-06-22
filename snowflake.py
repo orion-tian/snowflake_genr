@@ -1,14 +1,48 @@
 import maya.cmds as cmds
 from functools import partial
+import math
+import random
 
 objName = "snowflake"
 mainBranchDefault = 6
-subdivDefault = 30
+subdivDefault = 20
 height = 0.1
 radius = 0.2
 length = 2
 scale = 0.1
 
+def ws_center(pObj):
+    bbx = cmds.xform(pObj, q=True, bb=True, ws=True)
+    centerX = (bbx[0] + bbx[3]) / 2.0
+    centerY = (bbx[1] + bbx[4]) / 2.0
+    centerZ = (bbx[2] + bbx[5]) / 2.0
+    return (centerX, centerY, centerZ)
+
+def make_sub_branches(percntAlongBranch, local_scl, len, angle):
+  lx = len*math.cos(angle*math.pi/180)
+  lz = len*math.sin(angle*math.pi/180)
+
+  mainBranches = cmds.intSliderGrp(mainBranchSlider, q=True, value=True)
+  subdiv = cmds.intSliderGrp(numSubdvSlider, q=True, value=True)
+
+  startFace = int(percntAlongBranch*(subdiv-1)) + (mainBranches+2+subdiv)
+
+  for i in range(startFace, startFace+(subdiv*2)*(mainBranches*2), subdiv*2):
+    # if coord of face in -z, change local_dir so branches point right way
+    if mainBranches%2==1:
+      if ws_center(objName+'.f[%s]' %i)[0] < 0:
+        local_dir = (-1,0,0)
+      else:
+        local_dir = (1,0,0)
+    else:
+      if ws_center(objName+'.f[%s]' %i)[2] < 0:
+        local_dir = (0,0,-1)
+      else:
+        local_dir = (0,0,1)
+    
+
+    cmds.polyExtrudeFacet(objName+'.f[%s]' %i, ld=local_dir, lt=(lx, 0, lz), 
+                            ls=local_scl, d=subdiv)
 
 def create(*args):
   flkLst = cmds.ls(objName)
@@ -22,7 +56,7 @@ def create(*args):
   cmds.polyExtrudeFacet(objName + '.f[0:%s]' %(mainBranches-1), kft=False, 
                         lt=(0,0,length), ls=(scale,scale,1), d=subdiv)
 
-def resetCallback(pwindID, *pArgs):
+def resetCallback(*pArgs):
         # return UI to default values
         cmds.intSliderGrp(mainBranchSlider, e=True, value=mainBranchDefault)
         cmds.intSliderGrp(numSubdvSlider, e=True, value=subdivDefault)
@@ -62,6 +96,15 @@ cmds.showWindow()
 create()
 cmds.select(objName)
 
-# for i in range(32, 32+12):
-#   cmds.polyExtrudeFacet(objName+'.f[%s]' %i, lt=(.55,0,.5), ls=(0.1,0.1,1))
+ls = (.1,.1,.1)
+
+make_sub_branches(0.25, ls, 0.5, 90)
+make_sub_branches(0.5, ls, 1, 85)
+make_sub_branches(0.6, ls, 0.6, 85)
+make_sub_branches(0.75, ls, 0.7, 60)
+make_sub_branches(0.85, ls, 0.8, 60)
+make_sub_branches(0.95, ls, 0.9, 60)
+
+
+
 
