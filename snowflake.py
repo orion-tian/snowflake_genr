@@ -44,6 +44,10 @@ def make_sub_branches(percntAlongBranch, local_scl, len, angle):
     cmds.polyExtrudeFacet(objName+'.f[%s]' %i, ld=local_dir, lt=(lx, 0, lz), 
                             ls=local_scl, d=subdiv)
 
+def random_sub_br(slider):
+  for i in range(cmds.intSliderGrp(slider, q=True, value=True)):
+    make_sub_branches(random.random(), ls, random.random(), random.randint(10, 90))
+
 def create(*args):
   flkLst = cmds.ls(objName)
   if len(flkLst) > 0:
@@ -55,6 +59,8 @@ def create(*args):
   cmds.polyCylinder(n=objName, sa=mainBranches, h=height, r=radius)
   cmds.polyExtrudeFacet(objName + '.f[0:%s]' %(mainBranches-1), kft=False, 
                         lt=(0,0,length), ls=(scale,scale,1), d=subdiv)
+  
+  random_sub_br(numSubBranches)
 
 def resetCallback(*pArgs):
         # return UI to default values
@@ -86,9 +92,20 @@ numSubdvSlider = cmds.intSliderGrp(label='Subdivisions', columnAlign= (1,'right'
                                 step=1, dc = 'empty')
 cmds.intSliderGrp(numSubdvSlider,  e=True, dc = partial(create))
 
-#reset button
+numSubBranches = cmds.intSliderGrp(label='Sub Branches', columnAlign= (1,'right'), 
+                                field=True, min=1, max=20, value=5, 
+                                step=1, dc = 'empty')
+cmds.intSliderGrp(numSubBranches,  e=True, dc = partial(create))
+
+#buttons
 cmds.separator(h=10, style='none')
+cmds.rowColumnLayout(numberOfColumns=4, 
+                         columnWidth=[(1,225),(2, 75), (3, 10), (4,75)])
+cmds.separator(h=5, style='none')
+cmds.button(label='Re-Create', command=partial(create))
+cmds.separator(h=5, style='none')
 cmds.button(label='Reset', command=partial(resetCallback, windowID))
+cmds.separator(h=5, style='none')
 
 cmds.showWindow()
   
@@ -98,12 +115,12 @@ cmds.select(objName)
 
 ls = (.1,.1,.1)
 
-make_sub_branches(0.25, ls, 0.5, 90)
-make_sub_branches(0.5, ls, 1, 85)
-make_sub_branches(0.6, ls, 0.6, 85)
-make_sub_branches(0.75, ls, 0.7, 60)
-make_sub_branches(0.85, ls, 0.8, 60)
-make_sub_branches(0.95, ls, 0.9, 60)
+# make_sub_branches(0.25, ls, 0.5, 90)
+# make_sub_branches(0.5, ls, 1, 85)
+# make_sub_branches(0.6, ls, 0.6, 85)
+# make_sub_branches(0.75, ls, 0.7, 60)
+# make_sub_branches(0.85, ls, 0.8, 60)
+# make_sub_branches(0.95, ls, 0.9, 60)
 
 
 
