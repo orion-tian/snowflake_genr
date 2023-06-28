@@ -202,7 +202,7 @@ def p_random_callback(*pArgs):
 def p_reset_callback(*pArgs):
   # return UI to default values
   cmds.intSliderGrp(p_mainBranchSlider, e=True, value=mainBranchDefault)
-  cmds.intSliderGrp(p_lenBranchesSlider, e=True, value=p_lenDefault)
+  cmds.floatSliderGrp(p_lenBranchesSlider, e=True, value=p_lenDefault)
   cmds.intSliderGrp(p_numHexSlider, e=True, value=subBranchDefault)
 
   p_random_callback()
