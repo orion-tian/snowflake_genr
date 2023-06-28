@@ -13,6 +13,7 @@ sub_scale = (.1,.1,.1)
 mainBranchDefault = 6
 subdivDefault = 20
 subBranchDefault = 3
+p_lenDefault = 0.01
 
 posiMin = lenMin = angleMin = 0
 posiMax = 1
@@ -53,8 +54,7 @@ def make_sub_branch(percntAlongBranch, local_scl, len, angle):
       else:
         local_dir = (0,0,1)
 
-    cmds.polyExtrudeFacet(objName+'.f[%s]' %i, ld=local_dir, lt=(lx, 0, lz), 
-                            ls=local_scl)
+    cmds.polyExtrudeFacet(objName+'.f[%s]' %i, ld=local_dir, lt=(lx, 0, lz), ls=local_scl)
 
 def make_subs():
   numSub = cmds.intSliderGrp(d_numSubBranches, q=True, value=True)
@@ -110,14 +110,6 @@ def reset_callback(*pArgs):
 
   random_callback()
 
-def create_slider(pLabel, pMin, pMax, pVal):
-  slider = cmds.intSliderGrp(label=pLabel, columnAlign= (1,'right'), 
-                                  field=True, min=pMin, max=pMax, value=pVal, 
-                                  step=1, dc = partial(create))
-  # cmds.intSliderGrp(slider,  e=True, dc = partial(create))
-
-  return slider
-
 def create_branch_controls(pLabel, pPosiVal, pLenVal, pAnglVal, enable=True):
   branchLabel = cmds.text(label=pLabel, en=enable)
   posiSlider = cmds.floatSliderGrp(columnAlign= (1,'right'), field=True, min=posiMin, 
@@ -133,35 +125,48 @@ def create_branch_controls(pLabel, pPosiVal, pLenVal, pAnglVal, enable=True):
   return (branchLabel, posiSlider, lenSlider, angleSlider)
 
 #-------------Sectored Plates--------------------#
+def make_hexes(percntAlongBranch, pRadi):
+  p_branches = cmds.intSliderGrp(p_mainBranchSlider, q=True, value=True)
+  p_radius = cmds.floatSliderGrp(p_radiusSlider, q=True, value=True)
+
+  hexLen = p_radius
+  cmds.polyExtrudeFacet(objName + '.f[0:%s]' %(p_branches-1), kft=False, 
+                        lt=(0,0,hexLen), ls=(pRadi,1,1))
+  cmds.polyExtrudeFacet(objName + '.f[0:%s]' %(p_branches-1), kft=False, 
+                        lt=(0,0,hexLen), ls=(1,1,1))
+  cmds.polyExtrudeFacet(objName + '.f[0:%s]' %(p_branches-1), kft=False, 
+                        lt=(0,0,hexLen), ls=(0.5,1,0.5))
+
 def create_sectored_plates(*args):
   flkLst = cmds.ls(objName)
   if len(flkLst) > 0:
     cmds.delete(flkLst)
 
-  mainBranches = cmds.intSliderGrp(d_mainBranchSlider, q=True, value=True)
-  subdiv = cmds.intSliderGrp(d_numSubdvSlider, q=True, value=True)
+  p_branches = cmds.intSliderGrp(p_mainBranchSlider, q=True, value=True)
+  p_radius = cmds.floatSliderGrp(p_radiusSlider, q=True, value=True)
+  p_len = cmds.floatSliderGrp(p_lenBranchesSlider, q=True, value=True)
 
-  cmds.polyCylinder(n=objName, sa=mainBranches, h=height, r=radius)
-  cmds.polyExtrudeFacet(objName + '.f[0:%s]' %(mainBranches-1), kft=False, 
-                        lt=(0,0,0.05), ls=(1,1,1))
+  cmds.polyCylinder(n=objName, sa=p_branches, h=height, r=p_radius)
+  cmds.polyExtrudeFacet(objName + '.f[0:%s]' %(p_branches-1), kft=False, 
+                        lt=(0,0,p_len), ls=(1,1,1))
   
   hexLen = 0.03
-  cmds.polyExtrudeFacet(objName + '.f[0:%s]' %(mainBranches-1), kft=False, 
+  cmds.polyExtrudeFacet(objName + '.f[0:%s]' %(p_branches-1), kft=False, 
                         lt=(0,0,hexLen), ls=(2,1,1))
-  cmds.polyExtrudeFacet(objName + '.f[0:%s]' %(mainBranches-1), kft=False, 
+  cmds.polyExtrudeFacet(objName + '.f[0:%s]' %(p_branches-1), kft=False, 
                         lt=(0,0,hexLen), ls=(1,1,1))
-  cmds.polyExtrudeFacet(objName + '.f[0:%s]' %(mainBranches-1), kft=False, 
+  cmds.polyExtrudeFacet(objName + '.f[0:%s]' %(p_branches-1), kft=False, 
                         lt=(0,0,hexLen), ls=(0.5,1,0.5))
   
-  cmds.polyExtrudeFacet(objName + '.f[0:%s]' %(mainBranches-1), kft=False, 
+  cmds.polyExtrudeFacet(objName + '.f[0:%s]' %(p_branches-1), kft=False, 
                         lt=(0,0,0.05), ls=(1,1,1))
 
   hexLen = 0.03
-  cmds.polyExtrudeFacet(objName + '.f[0:%s]' %(mainBranches-1), kft=False, 
+  cmds.polyExtrudeFacet(objName + '.f[0:%s]' %(p_branches-1), kft=False, 
                         lt=(0,0,hexLen), ls=(3,1,1))
-  cmds.polyExtrudeFacet(objName + '.f[0:%s]' %(mainBranches-1), kft=False, 
+  cmds.polyExtrudeFacet(objName + '.f[0:%s]' %(p_branches-1), kft=False, 
                         lt=(0,0,2*hexLen), ls=(1,1,1))
-  cmds.polyExtrudeFacet(objName + '.f[0:%s]' %(mainBranches-1), kft=False, 
+  cmds.polyExtrudeFacet(objName + '.f[0:%s]' %(p_branches-1), kft=False, 
                         lt=(0,0,hexLen), ls=(0,1,0))
 
 #-------------UI--------------------#
@@ -179,9 +184,15 @@ cmds.tabLayout(tabs, edit=True, tabLabel=[dendrite, 'Dendrites'])
 
 # branch controls
 cmds.separator(h=10, style='none')
-d_mainBranchSlider = create_slider('Main Branches', 3, 12, mainBranchDefault)
-d_numSubdvSlider = create_slider('Subdivision', 1, 50, subdivDefault)
-d_numSubBranches = create_slider('Sub-Branches', 1, 7, subBranchDefault)
+d_mainBranchSlider = cmds.intSliderGrp(label='Main Branches', columnAlign= (1,'right'), 
+                                  field=True, min=3, max=12, value=mainBranchDefault, 
+                                  step=1, dc = partial(create))
+d_numSubdvSlider = slider = cmds.intSliderGrp(label='Subdivision', columnAlign= (1,'right'), 
+                                  field=True, min=1, max=50, value=subdivDefault, 
+                                  step=1, dc = partial(create))
+d_numSubBranches = slider = cmds.intSliderGrp(label='Sub-Branches', columnAlign= (1,'right'), 
+                                  field=True, min=1, max=7, value=subBranchDefault, 
+                                  step=1, dc = partial(create))
 cmds.separator(h=5, style='out')
 
 # sub branch controls
@@ -227,10 +238,55 @@ plates = cmds.columnLayout(adjustableColumn=True)
 cmds.tabLayout(tabs, edit=True, tabLabel=[(plates, 'Plates')])
 
 cmds.separator(h=10, style='none')
-p_mainBranchSlider = create_slider('Main Branches', 3, 12, mainBranchDefault)
-p_radiusSlider = create_slider('Radius', 0, 12, mainBranchDefault)
-p_lenBranchesSlider = create_slider('Branch Length', 0, 12, mainBranchDefault)
-p_numHexSlider = create_slider('Hexagons', 0, 12, mainBranchDefault)
+p_mainBranchSlider = cmds.intSliderGrp(label='Main Branches', columnAlign= (1,'right'), 
+                                  field=True, min=3, max=12, value=mainBranchDefault, 
+                                  step=1, dc = partial(create_sectored_plates))
+p_radiusSlider = cmds.floatSliderGrp(label='Radius', columnAlign= (1,'right'), 
+                                  field=True, min=0.01, max=1, value=radius, 
+                                  step=0.01, dc = partial(create_sectored_plates))
+p_lenBranchesSlider = cmds.floatSliderGrp(label='Branch Length', columnAlign= (1,'right'), 
+                                  field=True, min=0.01, max=1, value=p_lenDefault, 
+                                  step=0.01, dc = partial(create_sectored_plates))
+p_numHexSlider = cmds.intSliderGrp(label='Hexagons', columnAlign= (1,'right'), 
+                                  field=True, min=1, max=7, value=subBranchDefault, 
+                                  step=1, dc = partial(create_sectored_plates))
+cmds.separator(h=5, style='out')
+
+# sub hexagon controls
+cmds.rowColumnLayout(numberOfColumns=4, columnWidth=[(1,130),(2, 150),(3, 150),(4, 150)],
+                     adjustableColumn=True)
+# headings
+cmds.separator(h=5, style='none')
+cmds.text(label='position', align='left')
+cmds.text(label='radius', align='left')
+cmds.text(label='length', align='left')
+# branches
+p_allSubControls = [
+  create_branch_controls('Hexagon 1', random.random(), random.random()*lenMax, 
+                        random.randint(angleMin, angleMax)),
+  create_branch_controls('Hexagon 2', random.random(), random.random()*lenMax, 
+                        random.randint(angleMin, angleMax)),
+  create_branch_controls('Hexagon 3', random.random(), random.random()*lenMax, 
+                        random.randint(angleMin, angleMax)),
+  create_branch_controls('Hexagon 4', random.random(), random.random()*lenMax, 
+                        random.randint(angleMin, angleMax), False),
+  create_branch_controls('Hexagon 5', random.random(), random.random()*lenMax, 
+                        random.randint(angleMin, angleMax), False),
+  create_branch_controls('Hexagon 6', random.random(), random.random()*lenMax, 
+                        random.randint(angleMin, angleMax), False),
+  create_branch_controls('Hexagon 7', random.random(), random.random()*lenMax, 
+                        random.randint(angleMin, angleMax), False)
+]
+
+#buttons
+cmds.separator(h=10, style='none')
+cmds.setParent('..')
+cmds.rowColumnLayout(numberOfColumns=4, columnWidth=[(1,400),(2, 75), (3, 10), (4,75)])
+cmds.separator(h=5, style='none')
+cmds.button(label='Random', command=partial(random_callback))
+cmds.separator(h=5, style='none')
+cmds.button(label='Reset', command=partial(reset_callback, windowID))
+cmds.separator(h=5, style='none')
 
 cmds.showWindow()
   
