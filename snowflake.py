@@ -48,13 +48,13 @@ def make_sub_branch(percntAlongBranch, local_scl, len, angle):
   startFace = int(percntAlongBranch*(subdiv-1)) + (mainBranches+2+subdiv)
   for i in range(startFace, startFace+(subdiv*2)*(mainBranches*2), subdiv*2):
     if mainBranches%2==1:
-      # if coord of face in -z, change local_dir so branches point right way
+      # if coord of face in -x, change local_dir so branches point right way
       if ws_center(objName+'.f[%s]' %i)[0] < 0:
         local_dir = (-1,0,0)
       else:
         local_dir = (1,0,0)
     else:
-      # if odd number of branches, based on x-axis instead
+      # if even number of branches, based on z-axis instead
       if ws_center(objName+'.f[%s]' %i)[2] < 0:
         local_dir = (0,0,-1)
       else:
@@ -169,16 +169,37 @@ def make_hexes():
       cmds.polyExtrudeFacet(objName + '.f[0:%s]' %(p_branches-1), kft=False, 
                         lt=(0,0,(posi-old_posi)*p_branchLen), ls=(1,1,1))
     
-    cmds.polyExtrudeFacet(objName + '.f[0:%s]' %(p_branches-1), kft=False, 
-                          lt=(0,0,hexLen), ls=(radius,1,1))
+    if p_branches%2==1:
+      lcl_d = (0,0,1)
+    else:
+      lcl_d = (1,0,0)
+    faceToChange = int(p_branches/2)-1
+    if faceToChange-1 >=0:
+      cmds.polyExtrudeFacet(objName + '.f[0:%s]' %(faceToChange-1), kft=False, 
+                            lt=(0,0,hexLen), ls=(radius,1,1))
+    cmds.polyExtrudeFacet(objName + '.f[%s]' %(faceToChange), kft=False, 
+                          lt=(0,0,hexLen), ld=lcl_d, ls=(radius,1,1))
+    cmds.polyExtrudeFacet(objName + '.f[%s:%s]' %(faceToChange+1, p_branches-1), 
+                          kft=False, lt=(0,0,hexLen), ls=(radius,1,1))
     cmds.polyExtrudeFacet(objName + '.f[0:%s]' %(p_branches-1), kft=False, 
                           lt=(0,0,hexLen), ls=(1,1,1))
+    
     if i==numHex-1 and posi==1:
-      cmds.polyExtrudeFacet(objName + '.f[0:%s]' %(p_branches-1), kft=False, 
-                            lt=(0,0,hexLen), ls=(0,1,1))
+      lcl_scl_2 = (0, 1, 1)
     else:
-      cmds.polyExtrudeFacet(objName + '.f[0:%s]' %(p_branches-1), kft=False, 
-                            lt=(0,0,hexLen), ls=(1/radius,1,1))
+      lcl_scl_2 = (1/radius, 1, 1)
+    if faceToChange-1 >=0:
+      cmds.polyExtrudeFacet(objName + '.f[0:%s]' %(faceToChange-1), kft=False, 
+                            lt=(0,0,hexLen), ls=lcl_scl_2)
+    cmds.polyExtrudeFacet(objName + '.f[%s]' %(faceToChange), kft=False, 
+                          lt=(0,0,hexLen), ld=lcl_d, ls=lcl_scl_2)
+    cmds.polyExtrudeFacet(objName + '.f[%s:%s]' %(faceToChange+1, p_branches-1), 
+                          kft=False, lt=(0,0,hexLen), ls=lcl_scl_2)
+    # cmds.polyExtrudeFacet(objName + '.f[0:%s]' %(p_branches-1), kft=False, 
+    #                       lt=(0,0,hexLen), ls=lcl_scl_2)
+    
+    # cmds.polyExtrudeFacet(objName + '.f[0:%s]' %(p_branches-1), kft=False, 
+    #                       lt=(0,0,hexLen), ls=lcl_scl_2)
   
   cmds.polyExtrudeFacet(objName + '.f[0:%s]' %(p_branches-1), kft=False, 
                         lt=(0,0,(1-posi)*p_branchLen), ls=(1,1,1))
