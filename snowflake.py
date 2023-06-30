@@ -82,7 +82,7 @@ def make_subs():
       #disenable controls
       enable_subControls(subLabel, [posiSlider, lenSlider, angleSlider], False)
 
-def create_dendrite(*pArgs):
+def create_dendrite(pSubIndex=0, *pArgs):
   delete_old()
   mainBranches = cmds.intSliderGrp(d_mainBranchSlider, q=True, v=True)
   radii = cmds.floatSliderGrp(d_radiusSlider, q=True, v=True)
@@ -97,6 +97,14 @@ def create_dendrite(*pArgs):
                         d=subdiv)
   # make sub branches
   make_subs()
+  # select object and faces being manipulated
+  startFace = mainBranches+2+subdiv*mainBranches*4 + (pSubIndex-1)*mainBranches*8
+  endFace = startFace + mainBranches*8
+  if pSubIndex == 0:
+    sel = objName
+  else:
+    sel = [objName, objName+'.f[%s:%s]'%(startFace+1, endFace - 1)]
+  cmds.select(sel)
 
 def d_random_callback(*pArgs):
   """make sub branch controls random"""
@@ -119,7 +127,7 @@ def d_reset_callback(*pArgs):
   # d_random_callback()
   create_dendrite()
 
-def create_branch_controls(pLabel, pPosiVal, pLenVal, pAnglVal, pEnable=True):
+def create_branch_controls(pIndex, pLabel, pPosiVal, pLenVal, pAnglVal, pEnable=True):
   branchLabel = cmds.text(l=pLabel, en=pEnable)
   posiSlider = cmds.floatSliderGrp(columnAlign=(1,'right'),
                                    f=True, 
@@ -127,7 +135,7 @@ def create_branch_controls(pLabel, pPosiVal, pLenVal, pAnglVal, pEnable=True):
                                    max=posiMax, 
                                    v=pPosiVal, 
                                    step=posiStep, 
-                                   dc=partial(create_dendrite), 
+                                   dc=partial(create_dendrite, pIndex), 
                                    en=pEnable)
   lenSlider = cmds.floatSliderGrp(columnAlign=(1,'right'), 
                                   f=True, 
@@ -135,7 +143,7 @@ def create_branch_controls(pLabel, pPosiVal, pLenVal, pAnglVal, pEnable=True):
                                   max=lenMax, 
                                   v=pLenVal, 
                                   step=lenStep, 
-                                  dc=partial(create_dendrite), 
+                                  dc=partial(create_dendrite, pIndex), 
                                   en=pEnable)
   angleSlider = cmds.floatSliderGrp(columnAlign=(1,'right'), 
                                     f=True, 
@@ -143,7 +151,7 @@ def create_branch_controls(pLabel, pPosiVal, pLenVal, pAnglVal, pEnable=True):
                                     max=angleMax, 
                                     v=pAnglVal, 
                                     step=anglStep, 
-                                    dc=partial(create_dendrite), 
+                                    dc=partial(create_dendrite, pIndex), 
                                     en=pEnable)
 
   return (branchLabel, posiSlider, lenSlider, angleSlider)
@@ -292,7 +300,7 @@ windowID = "myWindowID"
 if cmds.window(windowID, exists=True):
   cmds.deleteUI(windowID)
     
-cmds.window(windowID, title='Snowflake Generator', sizeable=False, resizeToFitChildren=True)
+cmds.window(windowID, title='Simple Snowflake Generator', sizeable=False, resizeToFitChildren=True)
 tabs = cmds.tabLayout()
 
 #************************Dendrites Tab**************************#
@@ -308,7 +316,7 @@ d_mainBranchSlider = cmds.intSliderGrp(l='Main Branches',
                                        max=12, 
                                        v=mainBranchDef, 
                                        step=1, 
-                                       dc=partial(create_dendrite))
+                                       dc=partial(create_dendrite, 0))
 d_radiusSlider = cmds.floatSliderGrp(l='Radius', 
                                      columnAlign= (1,'right'), 
                                      field=True, 
@@ -316,7 +324,7 @@ d_radiusSlider = cmds.floatSliderGrp(l='Radius',
                                      max=1, 
                                      v=radiusDef, 
                                      step=0.01, 
-                                     dc=partial(create_dendrite))
+                                     dc=partial(create_dendrite, 0))
 d_numSubdvSlider = cmds.intSliderGrp(l='Subdivision', 
                                      columnAlign= (1,'right'), 
                                      field=True, 
@@ -324,7 +332,7 @@ d_numSubdvSlider = cmds.intSliderGrp(l='Subdivision',
                                      max=50, 
                                      v=subdivDef, 
                                      step=1, 
-                                     dc=partial(create_dendrite))
+                                     dc=partial(create_dendrite, 0))
 d_numSubBranches = cmds.intSliderGrp(label='Sub-Branches', 
                                      columnAlign= (1,'right'), 
                                      field=True, 
@@ -332,7 +340,7 @@ d_numSubBranches = cmds.intSliderGrp(label='Sub-Branches',
                                      max=7, 
                                      v=subBranchDef, 
                                      step=1, 
-                                     dc=partial(create_dendrite))
+                                     dc=partial(create_dendrite, 0))
 cmds.separator(h=5, style='out')
 
 # sub branch controls
@@ -346,34 +354,41 @@ cmds.text(l='length', align='left')
 cmds.text(l='angle', align='left')
 # branches
 d_allSubControls = [
-  create_branch_controls('Sub-Branch 1', 
+  create_branch_controls(1,
+                         'Sub-Branch 1', 
                          random.random(), 
                          random.random()*lenMax, 
                          random.randint(angleMin, angleMax)),
-  create_branch_controls('Sub-Branch 2', 
+  create_branch_controls(2,
+                         'Sub-Branch 2', 
                          random.random(), 
                          random.random()*lenMax, 
                          random.randint(angleMin, angleMax)),
-  create_branch_controls('Sub-Branch 3', 
+  create_branch_controls(3,
+                         'Sub-Branch 3', 
                          random.random(), 
                          random.random()*lenMax, 
                          random.randint(angleMin, angleMax)),
-  create_branch_controls('Sub-Branch 4', 
+  create_branch_controls(4,
+                         'Sub-Branch 4', 
                          random.random(), 
                          random.random()*lenMax, 
                          random.randint(angleMin, angleMax), 
                          False),
-  create_branch_controls('Sub-Branch 5', 
+  create_branch_controls(5,
+                         'Sub-Branch 5', 
                          random.random(), 
                          random.random()*lenMax, 
                          random.randint(angleMin, angleMax), 
                          False),
-  create_branch_controls('Sub-Branch 6', 
+  create_branch_controls(6,
+                         'Sub-Branch 6', 
                          random.random(), 
                          random.random()*lenMax, 
                          random.randint(angleMin, angleMax), 
                          False),
-  create_branch_controls('Sub-Branch 7', 
+  create_branch_controls(7,
+                         'Sub-Branch 7', 
                          random.random(), 
                          random.random()*lenMax, 
                          random.randint(angleMin, angleMax), 
