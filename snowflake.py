@@ -16,7 +16,8 @@ subdivDef = 20
 subBranchDef = subHexDef = 3
 p_lenDef = 0.01
 
-posiMin = lenMin = angleMin = 0
+posiMin = angleMin = 0
+lenMin = 0.01
 posiMax = 1
 lenMax = 0.5
 angleMax = 180
@@ -103,7 +104,7 @@ def create_dendrite(pSubIndex=0, *pArgs):
   if pSubIndex == 0:
     sel = objName
   else:
-    sel = [objName, objName+'.f[%s:%s]'%(startFace+1, endFace - 1)]
+    sel = [objName, objName+'.f[%s:%s]'%(startFace+1, endFace-1)]
   cmds.select(sel)
 
 def d_random_callback(*pArgs):
@@ -124,7 +125,6 @@ def d_reset_callback(*pArgs):
   cmds.intSliderGrp(d_numSubdvSlider, e=True, v=subdivDef)
   cmds.intSliderGrp(d_numSubBranches, e=True, v=subBranchDef)
 
-  # d_random_callback()
   create_dendrite()
 
 def create_branch_controls(pIndex, pLabel, pPosiVal, pLenVal, pAnglVal, pEnable=True):
@@ -214,7 +214,7 @@ def make_hexes_helper(pHexList, pBranches, pBranchLen, pNumHex):
                         lt=(0,0,(1-posi)*pBranchLen), 
                         ls=(1,1,1))
   
-def make_hexes():
+def make_hexes(pIndex):
   p_branches = cmds.intSliderGrp(p_mainBranchSlider, q=True, v=True)
   p_branchLen = cmds.floatSliderGrp(p_lenBranchesSlider, q=True, v=True)
   numHex = cmds.intSliderGrp(p_numHexSlider, q=True, v=True)
@@ -237,13 +237,26 @@ def make_hexes():
   hexInfo.sort(key=lambda x:x[0])
   make_hexes_helper(hexInfo, p_branches, p_branchLen, numHex)
 
-def create_plate(*pArgs):
+  # select object and faces being manipulated
+  if pIndex == 0:
+    sel = objName
+  else:
+    indexPosi = cmds.floatSliderGrp(p_allSubControls[pIndex-1][1], q=True, v=True)
+    indexRadi = cmds.floatSliderGrp(p_allSubControls[pIndex-1][2], q=True, v=True)
+    indexLen = cmds.floatSliderGrp(p_allSubControls[pIndex-1][3], q=True, v=True)
+    sortedIndex = hexInfo.index((indexPosi, indexRadi, indexLen))
+    startFace = p_branches+2+p_branches*4 + sortedIndex*p_branches*16
+    endFace = startFace + p_branches*12
+    sel = [objName, objName+'.f[%s:%s]'%(startFace, endFace-1)]
+  cmds.select(sel)
+
+def create_plate(pHexIndex=0, *pArgs):
   delete_old()
   p_branches = cmds.intSliderGrp(p_mainBranchSlider, q=True, v=True)
   p_radius = cmds.floatSliderGrp(p_radiusSlider, q=True, v=True)
 
   cmds.polyCylinder(n=objName, sa=p_branches, h=heightDef, r=p_radius)
-  make_hexes()
+  make_hexes(pHexIndex)
 
 def p_random_callback(*pArgs):
   # make sub hexagon controls random
@@ -263,9 +276,9 @@ def p_reset_callback(*pArgs):
   cmds.floatSliderGrp(p_lenBranchesSlider, e=True, v=p_lenDef)
   cmds.intSliderGrp(p_numHexSlider, e=True, v=subBranchDef)
 
-  p_random_callback()
+  create_plate()
 
-def create_hex_controls(pLabel, pPosiVal, pRadiVal, pLenVal, pEnable=True):
+def create_hex_controls(pIndex, pLabel, pPosiVal, pRadiVal, pLenVal, pEnable=True):
   branchLabel = cmds.text(l=pLabel, en=pEnable)
   posiSlider = cmds.floatSliderGrp(columnAlign= (1,'right'), 
                                    field=True, 
@@ -273,7 +286,7 @@ def create_hex_controls(pLabel, pPosiVal, pRadiVal, pLenVal, pEnable=True):
                                    max=posiMax, 
                                    v=pPosiVal, 
                                    step=posiStep, 
-                                   dc=partial(create_plate), 
+                                   dc=partial(create_plate, pIndex), 
                                    en=pEnable)
   radiSlider = cmds.floatSliderGrp(columnAlign= (1,'right'), 
                                    field=True, 
@@ -281,7 +294,7 @@ def create_hex_controls(pLabel, pPosiVal, pRadiVal, pLenVal, pEnable=True):
                                    max=p_radiusMax, 
                                    v=pRadiVal, 
                                    step=lenStep, 
-                                   dc=partial(create_plate), 
+                                   dc=partial(create_plate, pIndex), 
                                    en=pEnable)
   lenSlider = cmds.floatSliderGrp(columnAlign= (1,'right'), 
                                   field=True, 
@@ -289,7 +302,7 @@ def create_hex_controls(pLabel, pPosiVal, pRadiVal, pLenVal, pEnable=True):
                                   max=lenMax, 
                                   v=pLenVal, 
                                   step=lenStep, 
-                                  dc=partial(create_plate), 
+                                  dc=partial(create_plate, pIndex), 
                                   en=pEnable)
 
   return (branchLabel, posiSlider, radiSlider, lenSlider)
@@ -419,7 +432,7 @@ p_mainBranchSlider = cmds.intSliderGrp(l='Main Branches',
                                        max=12, 
                                        v=mainBranchDef, 
                                        step=1, 
-                                       dc=partial(create_plate))
+                                       dc=partial(create_plate, 0))
 p_radiusSlider = cmds.floatSliderGrp(l='Radius', 
                                      columnAlign=(1,'right'), 
                                      field=True, 
@@ -427,7 +440,7 @@ p_radiusSlider = cmds.floatSliderGrp(l='Radius',
                                      max=1, 
                                      v=radiusDef, 
                                      step=0.01, 
-                                     dc=partial(create_plate))
+                                     dc=partial(create_plate, 0))
 p_lenBranchesSlider = cmds.floatSliderGrp(l='Branch Length', 
                                           columnAlign=(1,'right'), 
                                           field=True, 
@@ -435,7 +448,7 @@ p_lenBranchesSlider = cmds.floatSliderGrp(l='Branch Length',
                                           max=1, 
                                           v=p_lenDef, 
                                           step=0.01, 
-                                          dc=partial(create_plate))
+                                          dc=partial(create_plate, 0))
 p_numHexSlider = cmds.intSliderGrp(label='Hexagons', 
                                    columnAlign=(1,'right'), 
                                    field=True, 
@@ -443,7 +456,7 @@ p_numHexSlider = cmds.intSliderGrp(label='Hexagons',
                                    max=7, 
                                    v=subHexDef, 
                                    step=1, 
-                                   dc=partial(create_plate))
+                                   dc=partial(create_plate, 0))
 cmds.separator(h=5, style='out')
 
 # sub hexagon controls
@@ -457,34 +470,41 @@ cmds.text(label='radius', align='left')
 cmds.text(label='length', align='left')
 # branches
 p_allSubControls = [
-  create_hex_controls('Hexagon 1', 
+  create_hex_controls(1,
+                      'Hexagon 1', 
                       random.random(), 
                       random.random()*p_radiusMax, 
                       random.random()*lenMax),
-  create_hex_controls('Hexagon 2', 
+  create_hex_controls(2,
+                      'Hexagon 2', 
                       random.random(), 
                       random.random()*p_radiusMax, 
                       random.random()*lenMax),
-  create_hex_controls('Hexagon 3', 
+  create_hex_controls(3,
+                      'Hexagon 3', 
                       random.random(), 
                       random.random()*p_radiusMax, 
                       random.random()*lenMax),
-  create_hex_controls('Hexagon 4', 
+  create_hex_controls(4,
+                      'Hexagon 4', 
                       random.random(), 
                       random.random()*p_radiusMax, 
                       random.random()*lenMax, 
                       False),
-  create_hex_controls('Hexagon 5', 
+  create_hex_controls(5,
+                      'Hexagon 5', 
                       random.random(), 
                       random.random()*p_radiusMax, 
                       random.random()*lenMax, 
                       False),
-  create_hex_controls('Hexagon 6', 
+  create_hex_controls(6,
+                      'Hexagon 6', 
                       random.random(), 
                       random.random()*p_radiusMax, 
                       random.random()*lenMax, 
                       False),
-  create_hex_controls('Hexagon 7',
+  create_hex_controls(7,
+                      'Hexagon 7',
                       random.random(), 
                       random.random()*p_radiusMax, 
                       random.random()*lenMax, 
