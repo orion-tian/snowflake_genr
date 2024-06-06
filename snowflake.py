@@ -3,6 +3,9 @@ from functools import partial
 import math
 import random
 
+
+
+
 #-------------Global Variables--------------------#
 objName = "snowflake"
 heightDef = 0.025
